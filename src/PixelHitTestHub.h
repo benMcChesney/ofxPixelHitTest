@@ -18,7 +18,9 @@ class PixelHitTestHub
         int getHexAt( ofVec2f input ) ;
 
         void addItem ( CorePixelHitTest * c ) ;
-        void removeItemByHex( int hex ) { } 
+    
+ //       Need to implement
+        //void removeItemByHex( int hex ) { } 
     
         void setup( int w , int h , int _backgroundHex ) ;
         int backgroundHex ;
@@ -48,7 +50,9 @@ class PixelHitTestHub
         int availableColor ;        //Starts at 0xFFFFFF and increment down...
         int lastMapHex ;            //for gui
 
-        ofFbo map ;                 //Save screen into this FBO then use it's pixels for hitTest operations
+        //Fixes rare read/write issue
+        ofFbo readMap ;             //used for hit Tracking, written into after draw is complete
+        ofFbo writeMap ;                //render buffer FBO
     private:
 };
 

@@ -10,20 +10,22 @@ PixelHitTestHub::~PixelHitTestHub()
     //dtor
 }
 
+//Retrieve the pixel from the FBO
 int PixelHitTestHub::getHexAt( ofVec2f input )
 {
     ofPixels pixels;
-    map.readToPixels(pixels);
+    readMap.readToPixels(pixels);
 
     int _hex = (pixels.getColor( input.x , input.y )).getHex() ;
     lastMapHex = _hex ;
 
     if ( _hex == backgroundHex ) 
-        return -1 ; 
+        return -5 ; 
         
     return _hex ;
 }
 
+//Return the CorePixelItem ( or use events and based on unique Hex Color and do your own handling ) 
 CorePixelHitTest * PixelHitTestHub::getItemAt ( ofVec2f input )
 {
     int hex = getHexAt( input ) ;
@@ -54,7 +56,9 @@ CorePixelHitTest * PixelHitTestHub::getItemByMapColor ( int hexColor )
 
 void PixelHitTestHub::beginFbo ( )
 {
-    map.begin() ;
+    ofFill() ; 
+    ofDisableAlphaBlending() ; 
+    writeMap.begin() ;
     //Clear background
     ofSetHexColor ( backgroundHex ) ;
     ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
@@ -63,16 +67,15 @@ void PixelHitTestHub::beginFbo ( )
 
 void PixelHitTestHub::endFbo ( )
 {
-    map.end() ;
+    writeMap.end() ;
+    //Any way to clone ? setPixels () ? 
+    readMap = writeMap ; 
 }
 
 
 //Draw minimap GUI
 void PixelHitTestHub::drawMap( float scale )
 {
-    ofDisableAlphaBlending () ; 
-    
-
     //How far to draw from the edge
     int padding  = 20 ;
 
@@ -80,7 +83,7 @@ void PixelHitTestHub::drawMap( float scale )
     ofPushMatrix() ;
         ofTranslate ( padding , padding , 0 ) ;
         ofScale ( scale , scale , scale ) ;
-        map.draw( 0 , 0 ) ;
+        readMap.draw( 0 , 0 ) ;
     ofPopMatrix() ;
 
     ofFill() ;
@@ -102,7 +105,7 @@ void PixelHitTestHub::drawMap( float scale )
 
     //Titles
     ofSetColor ( 175 , 175 , 175 ) ;
-    //Convert decimcal to hexidecimal string ? or RGN channels for more clarity ?
+    //Convert decimcal to hexidecimal string ? or RGB channels for more clarity ?
     //ofDrawBitmapString( "Map Color: \n " + ofToString( lastMapHex ) , 60 , padding + 10 ) ;
     ofDrawBitmapString( "Map Color " , 60 , padding + h + 15 ) ;
 
@@ -125,7 +128,8 @@ void PixelHitTestHub::addItem ( CorePixelHitTest * c )
 void PixelHitTestHub::setup ( int w , int h , int _backgroundHex )
 {
     backgroundHex = _backgroundHex ;
-    map.allocate( w , h ) ;
+    writeMap.allocate( w , h ) ;
+    readMap.allocate( w , h ) ;
     lastMapHex = backgroundHex ;
     debugDraw = false ;
     availableColor = 0xFFFFFF ;
