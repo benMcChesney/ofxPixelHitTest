@@ -24,7 +24,7 @@ class CorePixelHitTest
 
         virtual ofRectangle getHitRect ( ) { return hitRect ; }
         virtual int getMapHexColor ( ) { return mapHexColor ; }
-    
+
     protected:
         int mapHexColor ;
         ofRectangle hitRect ;
