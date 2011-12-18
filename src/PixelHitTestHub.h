@@ -22,18 +22,18 @@ class PixelHitTestHub
         //Need to Implement
         //void removeItemByHex( int hex ) { } 
     
-        void setup( int w , int h , int _backgroundHex ) ;
+        void setup( int w , int h , int _backgroundHex , int _captureIncrement = 6 ) ;
         int backgroundHex ;
 
         //Custom FBO Drawing
-        void beginFbo ( ) ;
+        bool beginFbo ( ) ;
         void endFbo ( ) ;
     
         //Simplified FBO Drawing
         void drawItemsIntoFBO ( ) ;
 
         //Draw debug
-        void drawMap( float scale = .25f ) ;
+        void drawMap( float scale = .25f , float padding = 15.0f ) ;
 
         //returns a unique color for hitTest id
         int getUniqueHex ( ) ;
@@ -46,15 +46,20 @@ class PixelHitTestHub
             return lastMapHex ;
         }
 
+        //Drawing every frame is intensive so we skip frames because it shouldn't effect the interactions too much and makes it much faster
+        int captureIncrement ; 
+    
         //draw 'minimap'
         bool debugDraw ;
     
+        //Store the contents of each map into this object
         ofPixels mapPixels ; 
 
     protected:
         int availableColor ;        //Starts at 0xFFFFFF and increment down...
         int lastMapHex ;            //for gui
         ofFbo map ;                 //Save screen into this FBO then use it's pixels for hitTest operations
+    
     private:
 };
 

@@ -47,13 +47,23 @@ CorePixelHitTest * PixelHitTestHub::getItemByMapColor ( int hexColor )
     return NULL ;
 }
 
-void PixelHitTestHub::beginFbo ( )
+bool PixelHitTestHub::beginFbo ( )
 {
-    map.begin() ;
-    //Clear background
-    ofSetHexColor ( backgroundHex ) ;
-    ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
-
+    //TODO: faster way than mod ?
+    //If it matches up to frameIncrement
+    if ( ofGetFrameNum() % captureIncrement == 0 ) 
+    {
+        map.begin() ;
+        //Clear background
+        ofSetHexColor ( backgroundHex ) ;
+        ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
+        return true ; 
+    }
+    else
+    {
+        return false ; 
+    }
+  
 }
 
 void PixelHitTestHub::endFbo ( )
@@ -80,15 +90,15 @@ void PixelHitTestHub::drawItemsIntoFBO ( )
 }
 
 //Draw minimap GUI
-void PixelHitTestHub::drawMap( float scale )
+void PixelHitTestHub::drawMap( float scale , float padding )
 {
     if ( debugDraw == false )
         return ;
     
-    //ofDisableAlphaBlending () ;
+    if ( padding != 0.0f ) 
+        ofDisableAlphaBlending () ;
 
     //How far to draw from the edge
-    int padding  = 20 ;
     if ( scale == 1.0f ) 
         padding = 0.0f ; 
 
@@ -142,12 +152,11 @@ void PixelHitTestHub::addItem ( CorePixelHitTest * c )
     items.push_back( c ) ;
 }
 
-void PixelHitTestHub::setup ( int w , int h , int _backgroundHex )
+void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureIncrement )
 {
     backgroundHex = _backgroundHex ;
     map.allocate( w , h , GL_RGB ) ;
-   // mapPixels = new unsigned char[w * h * 3] ; 
-    
+    captureIncrement = _captureIncrement ; 
     
     lastMapHex = backgroundHex ;
     debugDraw = false ;
@@ -162,9 +171,10 @@ int PixelHitTestHub::getUniqueHex ( )
 
 int PixelHitTestHub::getColorfulUniqueHex ( )
 {
+    //In production this is faster but makes debugger harder
   //  return getUniqueHex() ;
     
-    //Feel free to comment this out if needed but it makes the "mapping" more diverse visually
+    //Feel free to comment this out if needed but it makes the "mapping" more diverse visually and easier to debug
     int randomHex = ofColor( ofRandom ( 255 ) , ofRandom ( 255 ) , ofRandom ( 255 ) ).getHex() ;
     if ( items.size() < 1 ) 
         return randomHex ; 
