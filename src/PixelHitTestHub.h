@@ -18,9 +18,9 @@ class PixelHitTestHub
         int getHexAt( ofVec2f input ) ;
 
         void addItem ( CorePixelHitTest * c ) ;
-        void removeItemByHex( int hex ) { } 
     
-        ofImage inputMap ; 
+        //Need to Implement
+        //void removeItemByHex( int hex ) { } 
     
         void setup( int w , int h , int _backgroundHex ) ;
         int backgroundHex ;
@@ -28,9 +28,6 @@ class PixelHitTestHub
         //Custom FBO Drawing
         void beginFbo ( ) ;
         void endFbo ( ) ;
-    
-        void drawBegin(); 
-        void drawEnd() ; 
     
         //Simplified FBO Drawing
         void drawItemsIntoFBO ( ) ;
@@ -51,6 +48,8 @@ class PixelHitTestHub
 
         //draw 'minimap'
         bool debugDraw ;
+    
+        ofPixels mapPixels ; 
 
     protected:
         int availableColor ;        //Starts at 0xFFFFFF and increment down...

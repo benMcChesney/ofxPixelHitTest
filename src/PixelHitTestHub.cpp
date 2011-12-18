@@ -12,24 +12,12 @@ PixelHitTestHub::~PixelHitTestHub()
 
 int PixelHitTestHub::getHexAt( ofVec2f input )
 {
-   // ofPixels pixels;
-    //map.readToPixels(pixels);
-    (inputMap.getColor( input.x , input.y )).getHex() ; 
-   // cout << "getting hex !" << endl; 
-   // unsigned char rgb[3] ;
-   // glReadPixels(input.x, input.y, 1 , 1 , GL_RGB, GL_UNSIGNED_BYTE, rgb ) ; 
+    int index = (input.x + input.y * map.getWidth()) * 3; 
     
-   // cout << "r : " << rgb[0] << endl ; 
-   // cout << "g : " << rgb[1] << endl ; 
-   // cout << "b : " << rgb[2] << endl ;  
-        
-   // return backgroundHex ; 
-    //int _hex = (pixels.getColor( input.x , input.y )).getHex() ;
-    int _hex = (inputMap.getColor( input.x , input.y )).getHex() ;
-    lastMapHex = _hex ;
-
-    return _hex ;
-}
+    //cout << "@" << input.x<< ","<<input.y << "| r : " << r << " g: " << g << " b: " << b << endl ;  
+    lastMapHex = ofColor( mapPixels[index] , mapPixels[index + 1] , mapPixels[index + 2] ).getHex() ; 
+    return lastMapHex ; 
+ }
 
 CorePixelHitTest * PixelHitTestHub::getItemAt ( ofVec2f input )
 {
@@ -71,19 +59,9 @@ void PixelHitTestHub::beginFbo ( )
 void PixelHitTestHub::endFbo ( )
 {
     map.end() ;
+    map.readToPixels(mapPixels) ; 
 }
 
-void PixelHitTestHub::drawBegin()
-{
-    ofSetHexColor ( backgroundHex ) ;
-    ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
-}
-
-void PixelHitTestHub::drawEnd()
-{
-    inputMap.grabScreen(0, 0, ofGetWidth(), ofGetHeight() ) ; 
-//    imageMap.loadScreenData() ; 
-}
 
 void PixelHitTestHub::drawItemsIntoFBO ( )
 {
@@ -119,8 +97,7 @@ void PixelHitTestHub::drawMap( float scale )
         if ( scale != 1.0 ) 
             ofTranslate ( padding , padding , 0 ) ;
         ofScale ( scale , scale , scale ) ;
-        //map.draw( 0 , 0 ) ;
-        inputMap.draw( 0 , 0 ) ; 
+        map.draw( 0 , 0 ) ; 
     ofPopMatrix() ;
 
     ofFill() ;
@@ -168,8 +145,10 @@ void PixelHitTestHub::addItem ( CorePixelHitTest * c )
 void PixelHitTestHub::setup ( int w , int h , int _backgroundHex )
 {
     backgroundHex = _backgroundHex ;
-    map.allocate( w , h , GL_RGBA ) ;
-
+    map.allocate( w , h , GL_RGB ) ;
+   // mapPixels = new unsigned char[w * h * 3] ; 
+    
+    
     lastMapHex = backgroundHex ;
     debugDraw = false ;
     availableColor = 0xFFFFFF ;
