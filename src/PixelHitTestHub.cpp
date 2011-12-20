@@ -97,6 +97,11 @@ void PixelHitTestHub::drawMap( float scale , float padding )
     
     if ( padding != 0.0f ) 
         ofDisableAlphaBlending () ;
+    else
+    {
+        ofEnableAlphaBlending() ; 
+        ofSetColor ( 255 , 255 , 255, 127 ) ; 
+    }
 
     //How far to draw from the edge
     if ( scale == 1.0f ) 
