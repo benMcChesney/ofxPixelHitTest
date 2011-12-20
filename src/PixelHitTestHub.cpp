@@ -12,12 +12,24 @@ PixelHitTestHub::~PixelHitTestHub()
 
 int PixelHitTestHub::getHexAt( ofVec2f input )
 {
-    int index = (input.x + input.y * map.getWidth()) * 3; 
+   // ofPixels pixels;
+    //map.readToPixels(pixels);
+    (inputMap.getColor( input.x , input.y )).getHex() ; 
+   // cout << "getting hex !" << endl; 
+   // unsigned char rgb[3] ;
+   // glReadPixels(input.x, input.y, 1 , 1 , GL_RGB, GL_UNSIGNED_BYTE, rgb ) ; 
     
-    //cout << "@" << input.x<< ","<<input.y << "| r : " << r << " g: " << g << " b: " << b << endl ;  
-    lastMapHex = ofColor( mapPixels[index] , mapPixels[index + 1] , mapPixels[index + 2] ).getHex() ; 
-    return lastMapHex ; 
- }
+   // cout << "r : " << rgb[0] << endl ; 
+   // cout << "g : " << rgb[1] << endl ; 
+   // cout << "b : " << rgb[2] << endl ;  
+        
+   // return backgroundHex ; 
+    //int _hex = (pixels.getColor( input.x , input.y )).getHex() ;
+    int _hex = (inputMap.getColor( input.x , input.y )).getHex() ;
+    lastMapHex = _hex ;
+
+    return _hex ;
+}
 
 CorePixelHitTest * PixelHitTestHub::getItemAt ( ofVec2f input )
 {
@@ -47,31 +59,31 @@ CorePixelHitTest * PixelHitTestHub::getItemByMapColor ( int hexColor )
     return NULL ;
 }
 
-bool PixelHitTestHub::beginFbo ( )
+void PixelHitTestHub::beginFbo ( )
 {
-    //TODO: faster way than mod ?
-    //If it matches up to frameIncrement
-    if ( ofGetFrameNum() % captureIncrement == 0 ) 
-    {
-        map.begin() ;
-        //Clear background
-        ofSetHexColor ( backgroundHex ) ;
-        ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
-        return true ; 
-    }
-    else
-    {
-        return false ; 
-    }
-  
+    map.begin() ;
+    //Clear background
+    ofSetHexColor ( backgroundHex ) ;
+    ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
+
 }
 
 void PixelHitTestHub::endFbo ( )
 {
     map.end() ;
-    map.readToPixels(mapPixels) ; 
 }
 
+void PixelHitTestHub::drawBegin()
+{
+    ofSetHexColor ( backgroundHex ) ;
+    ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
+}
+
+void PixelHitTestHub::drawEnd()
+{
+    inputMap.grabScreen(0, 0, ofGetWidth(), ofGetHeight() ) ; 
+//    imageMap.loadScreenData() ; 
+}
 
 void PixelHitTestHub::drawItemsIntoFBO ( )
 {
@@ -90,20 +102,15 @@ void PixelHitTestHub::drawItemsIntoFBO ( )
 }
 
 //Draw minimap GUI
-void PixelHitTestHub::drawMap( float scale , float padding )
+void PixelHitTestHub::drawMap( float scale )
 {
     if ( debugDraw == false )
         return ;
     
-    if ( padding != 0.0f ) 
-        ofDisableAlphaBlending () ;
-    else
-    {
-        ofEnableAlphaBlending() ; 
-        ofSetColor ( 255 , 255 , 255, 127 ) ; 
-    }
+    //ofDisableAlphaBlending () ;
 
     //How far to draw from the edge
+    int padding  = 20 ;
     if ( scale == 1.0f ) 
         padding = 0.0f ; 
 
@@ -112,7 +119,8 @@ void PixelHitTestHub::drawMap( float scale , float padding )
         if ( scale != 1.0 ) 
             ofTranslate ( padding , padding , 0 ) ;
         ofScale ( scale , scale , scale ) ;
-        map.draw( 0 , 0 ) ; 
+        //map.draw( 0 , 0 ) ;
+        inputMap.draw( 0 , 0 ) ; 
     ofPopMatrix() ;
 
     ofFill() ;
@@ -157,12 +165,11 @@ void PixelHitTestHub::addItem ( CorePixelHitTest * c )
     items.push_back( c ) ;
 }
 
-void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureIncrement )
+void PixelHitTestHub::setup ( int w , int h , int _backgroundHex )
 {
     backgroundHex = _backgroundHex ;
-    map.allocate( w , h , GL_RGB ) ;
-    captureIncrement = _captureIncrement ; 
-    
+    map.allocate( w , h , GL_RGBA ) ;
+
     lastMapHex = backgroundHex ;
     debugDraw = false ;
     availableColor = 0xFFFFFF ;
@@ -176,10 +183,9 @@ int PixelHitTestHub::getUniqueHex ( )
 
 int PixelHitTestHub::getColorfulUniqueHex ( )
 {
-    //In production this is faster but makes debugger harder
   //  return getUniqueHex() ;
     
-    //Feel free to comment this out if needed but it makes the "mapping" more diverse visually and easier to debug
+    //Feel free to comment this out if needed but it makes the "mapping" more diverse visually
     int randomHex = ofColor( ofRandom ( 255 ) , ofRandom ( 255 ) , ofRandom ( 255 ) ).getHex() ;
     if ( items.size() < 1 ) 
         return randomHex ; 
