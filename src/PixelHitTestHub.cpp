@@ -8,15 +8,34 @@ PixelHitTestHub::PixelHitTestHub()
 PixelHitTestHub::~PixelHitTestHub()
 {
     //dtor
+
 }
 
 int PixelHitTestHub::getHexAt( ofVec2f input )
 {
-    int index = (input.x + input.y * map.getWidth()) * 3; 
-    
-    //cout << "@" << input.x<< ","<<input.y << "| r : " << r << " g: " << g << " b: " << b << endl ;  
-    lastMapHex = ofColor( mapPixels[index] , mapPixels[index + 1] , mapPixels[index + 2] ).getHex() ; 
-    return lastMapHex ; 
+	//Adjust our input by the sampling Rate
+	ofVec2f adjustedInput = ofVec2f ( (int)input.x / mapSampling , (int)input.y / mapSampling ) ; 
+
+	if ( bUseCamera == true ) 
+	{
+		int curY = adjustedInput.y ; 
+		adjustedInput.y = ( map.getHeight() -1 ) - curY ; 
+	}
+
+	//cout << "original input : " << input.x << "," << input.y << endl ; 
+	//cout << "adjusted input : " << adjustedInput.x << " , " << adjustedInput.y << endl ;
+
+    if ( adjustedInput.x > 0 && adjustedInput.x < maxBounds.width && adjustedInput.y > 0 && adjustedInput.y < maxBounds.height ) 
+	{
+		int index = (adjustedInput.x + adjustedInput.y * map.getWidth()) * 3; 
+		//cout << "@" << input.x<< ","<<input.y << "| r : " << r << " g: " << g << " b: " << b << endl ;  
+		lastMapHex = ofColor( mapPixels[index] , mapPixels[index + 1] , mapPixels[index + 2] ).getHex() ; 
+		return lastMapHex ; 
+	}
+	else
+	{
+		return backgroundHex ; 
+	}
  }
 
 CorePixelHitTest * PixelHitTestHub::getItemAt ( ofVec2f input )
@@ -47,13 +66,15 @@ CorePixelHitTest * PixelHitTestHub::getItemByMapColor ( int hexColor )
     return NULL ;
 }
 
-bool PixelHitTestHub::beginFbo ( )
+bool PixelHitTestHub::beginFbo ( bool flipY )
 {
     //TODO: faster way than mod ?
     //If it matches up to frameIncrement
     if ( ofGetFrameNum() % captureIncrement == 0 ) 
     {
-        map.begin() ;
+        map.begin( flipY ) ;
+		ofPushMatrix() ; 
+		ofScale( mapScale , mapScale , 1 ) ; 
         //Clear background
         ofSetHexColor ( backgroundHex ) ;
         ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
@@ -61,6 +82,7 @@ bool PixelHitTestHub::beginFbo ( )
     }
     else
     {
+	
         return false ; 
     }
   
@@ -68,6 +90,7 @@ bool PixelHitTestHub::beginFbo ( )
 
 void PixelHitTestHub::endFbo ( )
 {
+	ofPopMatrix() ; 
     map.end() ;
     map.readToPixels(mapPixels) ; 
 }
@@ -112,7 +135,20 @@ void PixelHitTestHub::drawMap( float scale , float padding )
         if ( scale != 1.0 ) 
             ofTranslate ( padding , padding , 0 ) ;
         ofScale ( scale , scale , scale ) ;
-        map.draw( 0 , 0 ) ; 
+
+		if ( bUseCamera == true ) 
+		{
+
+		glPushMatrix();  
+		glScalef(1, -1, 1);  
+		map.draw( 0, -map.getHeight() );  
+        //map.draw( 0 , 0 ) ;
+		glPopMatrix() ; 
+		}
+		else
+		{
+			map.draw( 0 , 0 ) ; 
+		}
     ofPopMatrix() ;
 
     ofFill() ;
@@ -157,15 +193,23 @@ void PixelHitTestHub::addItem ( CorePixelHitTest * c )
     items.push_back( c ) ;
 }
 
-void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureIncrement )
+void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureIncrement , int _mapSampling )
 {
+	mapSampling = _mapSampling ; 
+	mapScale = 1.0f / (float)mapSampling ; 
+	fullDimensions = ofPoint ( w , h ) ; 
+
     backgroundHex = _backgroundHex ;
-    map.allocate( w , h , GL_RGB ) ;
+    map.allocate( fullDimensions.x/mapSampling , fullDimensions.y/mapSampling , GL_RGB ) ;
     captureIncrement = _captureIncrement ; 
     
     lastMapHex = backgroundHex ;
     debugDraw = false ;
     availableColor = 0xFFFFFF ;
+	bUseCamera = false ;
+
+	maxBounds = ofRectangle ( 0 , 0 , map.getWidth() -1 , map.getHeight() -1 ) ; 
+	cout << "maxBounds : " << maxBounds.x << "," << maxBounds.y << "," << maxBounds.width << "," << maxBounds.height << endl ; 
 }
 
 int PixelHitTestHub::getUniqueHex ( )
@@ -194,5 +238,13 @@ int PixelHitTestHub::getColorfulUniqueHex ( )
     }
 
     return randomHex ;
+}
+
+void PixelHitTestHub::setSampling( int _mapSampling ) 
+{
+	mapSampling = _mapSampling ; 
+	mapScale = 1.0f / (float)mapSampling ; 
+    map.allocate( fullDimensions.x/mapSampling , fullDimensions.y/mapSampling , GL_RGB ) ;
+	maxBounds = ofRectangle ( 0 , 0 , map.getWidth() -1 , map.getHeight() -1 ) ; 
 }
 

@@ -22,15 +22,15 @@ class PixelHitTestHub
         //Need to Implement
         //void removeItemByHex( int hex ) { } 
     
-        void setup( int w , int h , int _backgroundHex , int _captureIncrement = 6 ) ;
+        void setup( int w , int h , int _backgroundHex , int _captureIncrement = 6 , int _mapSampling = 2 ) ;
         int backgroundHex ;
 
         //Custom FBO Drawing
-        bool beginFbo ( ) ;
+        bool beginFbo ( bool flipY = false ) ;
         void endFbo ( ) ;
     
         //Simplified FBO Drawing
-        void drawItemsIntoFBO ( ) ;
+        void drawItemsIntoFBO (  ) ;
 
         //Draw debug
         void drawMap( float scale = .25f , float padding = 15.0f ) ;
@@ -46,6 +46,13 @@ class PixelHitTestHub
             return lastMapHex ;
         }
 
+		void addColor ( int _hex ) 
+		{
+			takenColors.push_back ( _hex ) ;
+		}
+
+		ofPoint fullDimensions ; 
+
         //Drawing every frame is intensive so we skip frames because it shouldn't effect the interactions too much and makes it much faster
         int captureIncrement ; 
     
@@ -54,11 +61,24 @@ class PixelHitTestHub
     
         //Store the contents of each map into this object
         ofPixels mapPixels ; 
+		bool cameraRendered ;	//if using ofCamera it will flip the Y
+		 ofFbo map ;                 //Save screen into this FBO then use it's pixels for hitTest operations
 
+		 bool bUseCamera ; 
+
+		 //To increase performance we sample the screen and do not use the full size
+		 void setSampling( int sampleRate ) ; 
+
+		 //"Cache" the max indicies to prevent crashing
+		 ofRectangle maxBounds ; 
     protected:
+
         int availableColor ;        //Starts at 0xFFFFFF and increment down...
         int lastMapHex ;            //for gui
-        ofFbo map ;                 //Save screen into this FBO then use it's pixels for hitTest operations
+		vector<int> takenColors  ; 
+		float mapScale ; 
+		int mapSampling ; 
+       
     
     private:
 };
