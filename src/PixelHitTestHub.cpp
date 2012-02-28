@@ -15,64 +15,42 @@ int PixelHitTestHub::getHexAt( ofVec2f input )
 {
 	//Adjust our input by the sampling Rate
 	ofVec2f adjustedInput = ofVec2f ( (int)input.x / mapSampling , (int)input.y / mapSampling ) ; 
-
-	if ( bUseCamera == true ) 
-	{
-		int curY = adjustedInput.y ; 
-		adjustedInput.y = ( map.getHeight() -1 ) - curY ; 
-	}
-
-	//cout << "original input : " << input.x << "," << input.y << endl ; 
 	//cout << "adjusted input : " << adjustedInput.x << " , " << adjustedInput.y << endl ;
 
+    //Calculate if we are within bounds
     if ( adjustedInput.x > 0 && adjustedInput.x < maxBounds.width && adjustedInput.y > 0 && adjustedInput.y < maxBounds.height ) 
 	{
-		int index = (adjustedInput.x + adjustedInput.y * map.getWidth()) * 3; 
-		//cout << "@" << input.x<< ","<<input.y << "| r : " << r << " g: " << g << " b: " << b << endl ;  
+        //(x + ( y * width )) * numberColorChannels 
+		int index = (adjustedInput.x + adjustedInput.y * map.getWidth()) * 3 ; 
+        //store the old hex for comparison
+        int oldHex = lastMapHex ; 
+        //we use the R + G + B channels to get the color
 		lastMapHex = ofColor( mapPixels[index] , mapPixels[index + 1] , mapPixels[index + 2] ).getHex() ; 
-		return lastMapHex ; 
+        
+        //Pixel changed, need to call pixel_out on the last value
+        if ( oldHex != lastMapHex ) 
+            ofNotifyEvent( PixelHitTestEvent::Instance()->PIXEL_OUT , oldHex , this ) ; 
+        //New item ! call pixel_over
+        else
+            ofNotifyEvent( PixelHitTestEvent::Instance()->PIXEL_OVER, lastMapHex, this ) ; 
+        
+        return lastMapHex ; 
 	}
 	else
 	{
+        lastMapHex = backgroundHex ; 
 		return backgroundHex ; 
 	}
  }
 
-CorePixelHitTest * PixelHitTestHub::getItemAt ( ofVec2f input )
-{
-    int hex = getHexAt( input ) ;
-
-    //If it's the background color it's not over content
-    if ( hex == backgroundHex )
-        return NULL ;
-
-    //Otherwise try and get the color
-    return getItemByMapColor( hex ) ;
-}
-
-CorePixelHitTest * PixelHitTestHub::getItemByMapColor ( int hexColor )
-{
-    //iterate through
-    for ( int i = 0 ; i < items.size() ; i++ )
-    {
-        //Compare mapHexColor to isolated hexColor
-        if ( items[i]->getMapHexColor() == hexColor )
-        {
-            //cout << "match found for : " << hexColor << endl ;
-            return items[i] ;
-        }
-    }
-
-    return NULL ;
-}
-
-bool PixelHitTestHub::beginFbo ( bool flipY )
+bool PixelHitTestHub::beginFbo (  )
 {
     //TODO: faster way than mod ?
     //If it matches up to frameIncrement
     if ( ofGetFrameNum() % captureIncrement == 0 ) 
     {
-        map.begin( flipY ) ;
+        //Record the FBO !
+        map.begin( ) ;
 		ofPushMatrix() ; 
 		ofScale( mapScale , mapScale , 1 ) ; 
         //Clear background
@@ -92,69 +70,29 @@ void PixelHitTestHub::endFbo ( )
 {
 	ofPopMatrix() ; 
     map.end() ;
+    //Store the pixels as a seperate array. You cannot read / write at the same time asaynchronously
+    //this can espeically cause issue with servers or hardware like touchscreens / depth cameras
     map.readToPixels(mapPixels) ; 
-}
-
-
-void PixelHitTestHub::drawItemsIntoFBO ( )
-{
-    map.begin() ;
-        //Clear background
-        ofSetHexColor ( backgroundHex ) ;
-        ofRect ( 0 , 0 , ofGetWidth() , ofGetHeight() ) ;
-
-        ofSetColor ( 255 , 255 , 255 ) ;
-        for ( int i = 0 ; i < items.size() ; i++ )
-        {
-            items[i]->renderMap( ) ;
-        }
-
-    map.end() ;
 }
 
 //Draw minimap GUI
 void PixelHitTestHub::drawMap( float scale , float padding )
 {
-    if ( debugDraw == false )
+    if ( bDebugDraw == false )
         return ;
     
-    if ( padding != 0.0f ) 
-        ofDisableAlphaBlending () ;
-    else
-    {
-        ofEnableAlphaBlending() ; 
-        ofSetColor ( 255 , 255 , 255, 127 ) ; 
-    }
-
-    //How far to draw from the edge
-    if ( scale == 1.0f ) 
-        padding = 0.0f ; 
-
-    //ofSetColor ( 255 , 255 , 255 ) ;
-    ofPushMatrix() ;
-        if ( scale != 1.0 ) 
-            ofTranslate ( padding , padding , 0 ) ;
-        ofScale ( scale , scale , scale ) ;
-
-		if ( bUseCamera == true ) 
-		{
-
-		glPushMatrix();  
-		glScalef(1, -1, 1);  
-		map.draw( 0, -map.getHeight() );  
-        //map.draw( 0 , 0 ) ;
-		glPopMatrix() ; 
-		}
-		else
-		{
-			map.draw( 0 , 0 ) ; 
-		}
+    float iMapScale = 1.0f / mapScale ; 
+    
+    ofSetColor ( 255 , 255 , 255 ) ; 
+    ofPushMatrix() ; 
+        ofTranslate( padding, padding , 0 ) ; 
+        ofScale ( iMapScale * scale, iMapScale *scale , iMapScale *scale ) ;
+        map.draw( 0 , 0 ) ; 
     ofPopMatrix() ;
 
     ofFill() ;
     //Draw Last Color Swatches
-
-
+    
     int w = ofGetWidth() * scale ;
     int h = ofGetHeight() * scale ;
 
@@ -170,7 +108,7 @@ void PixelHitTestHub::drawMap( float scale , float padding )
 
     //Titles
     ofSetColor ( 175 , 175 , 175 ) ;
-    //Convert decimcal to hexidecimal string ? or RGN channels for more clarity ?
+    //Convert decimcal to hexidecimal string ? or RGB channels for more clarity ?
     //ofDrawBitmapString( "Map Color: \n " + ofToString( lastMapHex ) , 60 , padding + 10 ) ;
     ofDrawBitmapString( "Map Color " , 60 , padding + h + 15 ) ;
 
@@ -187,10 +125,19 @@ void PixelHitTestHub::drawMap( float scale , float padding )
     ofFill() ;
 }
 
-
-void PixelHitTestHub::addItem ( CorePixelHitTest * c )
+void PixelHitTestHub::drawOverlay( )
 {
-    items.push_back( c ) ;
+    if ( bDebugOverlay == false )
+        return ;
+    
+    float iMapScale = 1.0f / mapScale ; 
+    
+    ofSetColor ( 255 , 255 , 255 , 125 ) ; 
+    ofPushMatrix() ; 
+        ofScale ( iMapScale , iMapScale , iMapScale ) ;
+        map.draw( 0 , 0 ) ; 
+    ofPopMatrix() ;
+
 }
 
 void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureIncrement , int _mapSampling )
@@ -204,12 +151,12 @@ void PixelHitTestHub::setup ( int w , int h , int _backgroundHex , int _captureI
     captureIncrement = _captureIncrement ; 
     
     lastMapHex = backgroundHex ;
-    debugDraw = false ;
+    bDebugDraw = false ;
+    bDebugOverlay = false ;
     availableColor = 0xFFFFFF ;
-	bUseCamera = false ;
 
 	maxBounds = ofRectangle ( 0 , 0 , map.getWidth() -1 , map.getHeight() -1 ) ; 
-	cout << "maxBounds : " << maxBounds.x << "," << maxBounds.y << "," << maxBounds.width << "," << maxBounds.height << endl ; 
+	cout << "Pixel bounds : " << maxBounds.x << "," << maxBounds.y << "," << maxBounds.width << "," << maxBounds.height << endl ; 
 }
 
 int PixelHitTestHub::getUniqueHex ( )
@@ -218,26 +165,43 @@ int PixelHitTestHub::getUniqueHex ( )
     return availableColor ;
 }
 
+int PixelHitTestHub::getLastMapHex()
+{
+    return lastMapHex ;
+}
+
+void PixelHitTestHub::addColor ( int _hex ) 
+{
+    takenColors.push_back ( _hex ) ;
+}
+
 int PixelHitTestHub::getColorfulUniqueHex ( )
 {
-    //In production this is faster but makes debugger harder
-  //  return getUniqueHex() ;
+    /* faster, more accurate way but harder to debug 
+    addColor( availableColor ) ; 
+    availableColor-- ; 
+    
+    return availableColor ; 
+    */
     
     //Feel free to comment this out if needed but it makes the "mapping" more diverse visually and easier to debug
     int randomHex = ofColor( ofRandom ( 255 ) , ofRandom ( 255 ) , ofRandom ( 255 ) ).getHex() ;
-    if ( items.size() < 1 ) 
+    if ( takenColors.size() == 0 ) 
         return randomHex ; 
-    for ( int i = 0 ; i < items.size() ; i++ )
+    for ( int i = 0 ; i < takenColors.size() ; i++ )
     {
-        if ( items[i]->getMapHexColor() == randomHex )
+        if ( takenColors[i] == randomHex )
         {
             //Color already in use, start over with a new hexValue
             i = 0 ;
             randomHex = ofColor( ofRandom ( 255 ) , ofRandom ( 255 ) , ofRandom ( 255 ) ).getHex() ;
         }
     }
+    
+    addColor( randomHex ) ; 
 
     return randomHex ;
+
 }
 
 void PixelHitTestHub::setSampling( int _mapSampling ) 
