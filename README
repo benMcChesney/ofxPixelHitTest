@@ -1,7 +1,12 @@
 Created by Ben McChesney
 
-This is a small addon used to draw shapes into a single FBO and then compare hex values from that FBO to interactive objects.
+Feel free to use this addon however you see fit commercially or otherwise. I'd prefer if you open sourced it or at least let me know if it's useful to anyone else :D
 
-Examples to come soon!
+This is a small addon used to draw shapes into a single FBO and then compares hex values from that FBO to interactive objects.
 
--Ben
+Examples
+
+HitTest2D
+	- Simple rectangle shapes that respond to Mouse OVER , OUT and CLICK
+
+HitTest3D - Coming Soon
