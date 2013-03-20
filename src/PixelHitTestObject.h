@@ -13,18 +13,19 @@ class PixelHitTestObject
         virtual void renderMap ( ) { }
         virtual void inputFromHex( int hex ) { }
 
-        int getPixelHex( )
+        virtual int getPixelHex( )
         {
             return pixelHex ;
         }
 
-        void setPixelHex( int _pixelHex )
+        virtual void setPixelHex( int _pixelHex )
         {
             pixelHex = _pixelHex ;
         }
 
-        bool isHex( int inputHex ) { return ( pixelHex == inputHex ) ; }
+        virtual bool isHex( int inputHex ) { return ( pixelHex == inputHex ) ; }
         protected:
+    
         int pixelHex ;
 
 
