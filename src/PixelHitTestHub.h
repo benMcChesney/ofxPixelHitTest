@@ -58,6 +58,8 @@ class PixelHitTestHub
              static PixelHitTestHub inst ;
              return &inst ;
          }
+    
+        int getlastMapHex ( ) { return lastMapHex ; } 
 
 
     protected:

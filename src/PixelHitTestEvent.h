@@ -9,6 +9,20 @@
 #ifndef emptyExample_PixelHitTestEvent_h
 #define emptyExample_PixelHitTestEvent_h
 
+
+class PixelHitTestEventArgs
+{
+    public:
+        PixelHitTestEventArgs( ofVec2f _input , int _inputHex )
+        {
+            input = _input ;
+            inputHex = _inputHex ;
+        }
+        
+        ofVec2f input ;
+        int inputHex ;
+};
+
 class PixelHitTestEvent
 {
     public :
@@ -23,7 +37,14 @@ class PixelHitTestEvent
     
         ofEvent<int>    PIXEL_OVER ;   
         ofEvent<int>    PIXEL_OUT ;
-        ofEvent<int>    PIXEL_CLICK ; 
+        ofEvent<int>    PIXEL_CLICK ;
+    
+        ofEvent<PixelHitTestEventArgs>    PIXEL_DOWN ;
+        ofEvent<PixelHitTestEventArgs>    PIXEL_DRAG ;
+        ofEvent<PixelHitTestEventArgs>    PIXEL_UP ;
+    
+        ofEvent<int>    PIXEL_CLICK_AFTER ;
 };
+
 
 #endif
